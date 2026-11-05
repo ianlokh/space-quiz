@@ -47,6 +47,8 @@ h1 small::before{content:"";width:8px;height:8px;border-radius:50%;background:va
 .opt{font:inherit;text-align:left;padding:12px 14px;border:2px solid var(--border);border-radius:12px;
   background:transparent;color:var(--text);cursor:pointer;transition:transform .15s,border-color .15s,background .15s}
 .opt:hover:not(:disabled){border-color:var(--accent);transform:translateY(-1px)}
+.difficulty-choice{display:flex;justify-content:space-between;align-items:center}
+.difficulty-choice small{color:var(--muted);font-size:13px}
 .opt:disabled{cursor:default}
 .opt.correct{border-color:var(--good);background:var(--goodbg);animation:pop .45s}
 .opt.wrong{border-color:var(--bad);background:var(--badbg);animation:shake .5s}
@@ -81,41 +83,56 @@ h1 small::before{content:"";width:8px;height:8px;border-radius:50%;background:va
 </main>
 <script>
 const Q=[
-["Who was the first human to travel into space?",["Neil Armstrong","Yuri Gagarin","Buzz Aldrin","Alan Shepard"],1,"Yuri Gagarin orbited Earth in 1961."],
-["Which year did humans first land on the Moon?",["1965","1969","1972","1975"],1,"Apollo 11 landed in July 1969."],
-["Which planet is known as the Red Planet?",["Venus","Jupiter","Mars","Mercury"],2,"Iron oxide gives Mars its red colour."],
-["What was the first artificial satellite?",["Sputnik 1","Explorer 1","Vostok 1","Telstar"],0,"Sputnik 1 launched in 1957."],
-["Which probe left our solar system's heliosphere first?",["Pioneer 10","Voyager 1","Cassini","New Horizons"],1,"Voyager 1 crossed in 2012."],
-["What is the largest planet in our solar system?",["Saturn","Neptune","Earth","Jupiter"],3,"Jupiter could fit over 1,300 Earths."],
-["Which telescope launched in 1990 and still orbits Earth?",["James Webb","Hubble","Kepler","Spitzer"],1,"Hubble has transformed astronomy."],
-["What is the name of the first space shuttle to fly to orbit?",["Challenger","Discovery","Columbia","Atlantis"],2,"Columbia flew STS-1 in 1981."],
-["Which planet has the most prominent ring system?",["Saturn","Uranus","Mars","Mercury"],0,"Saturn's rings are mostly water ice."],
-["Which rover landed on Mars in 2021?",["Curiosity","Opportunity","Perseverance","Spirit"],2,"Perseverance landed in Jezero Crater."]
+["Who was the first human to travel into space?",["Neil Armstrong","Yuri Gagarin","Buzz Aldrin","Alan Shepard"],1,"Yuri Gagarin orbited Earth in 1961.","Easy","🌍"],
+["Which year did humans first land on the Moon?",["1965","1969","1972","1975"],1,"Apollo 11 landed in July 1969.","Easy","🌙"],
+["Which planet is known as the Red Planet?",["Venus","Jupiter","Mars","Mercury"],2,"Iron oxide gives Mars its red colour.","Easy","🔴"],
+["What was the first artificial satellite?",["Sputnik 1","Explorer 1","Vostok 1","Telstar"],0,"Sputnik 1 launched in 1957.","Medium","🛰️"],
+["Which probe left our solar system's heliosphere first?",["Pioneer 10","Voyager 1","Cassini","New Horizons"],1,"Voyager 1 crossed in 2012.","Hard","🌌"],
+["What is the largest planet in our solar system?",["Saturn","Neptune","Earth","Jupiter"],3,"Jupiter could fit over 1,300 Earths.","Medium","🪐"],
+["Which telescope launched in 1990 and still orbits Earth?",["James Webb","Hubble","Kepler","Spitzer"],1,"Hubble has transformed astronomy.","Medium","🔭"],
+["What is the name of the first space shuttle to fly to orbit?",["Challenger","Discovery","Columbia","Atlantis"],2,"Columbia flew STS-1 in 1981.","Hard","🚀"],
+["Which planet has the most prominent ring system?",["Saturn","Uranus","Mars","Mercury"],0,"Saturn's rings are mostly water ice.","Medium","💫"],
+["Which rover landed on Mars in 2021?",["Curiosity","Opportunity","Perseverance","Spirit"],2,"Perseverance landed in Jezero Crater.","Hard","🤖"]
 ];
 const view=document.getElementById('view');
-let i=0,score=0,locked=false;
-let answers=Array(Q.length).fill(null);
+let i=0,score=0,locked=false,questions=[],answers=[];
 const esc=s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 
-function render(){
-  const [q,opts]=Q[i];
+function renderStart(){
+  questions=[];answers=[];i=0;score=0;locked=false;
+  const difficulties=["Easy","Medium","Hard"];
   view.innerHTML=`
-  <div class="top"><span>Question ${i+1} / ${Q.length}</span><span>⭐ Score: ${score}</span></div>
-  <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${Q.length}" aria-valuenow="${i}"><div id="fill"></div></div>
-  <div class="emoji">${["🌍","🌙","🔴","🛰️","🌌","🪐","🔭","🚀","💫","🤖"][i]}</div>
+  <section aria-labelledby="start-title">
+    <p class="q" id="start-title">Choose your difficulty</p>
+    <div class="opts">${difficulties.map(level=>`<button class="opt difficulty-choice" data-difficulty="${level}"><strong>${level}</strong><small>${Q.filter(q=>q[4]===level).length} questions</small></button>`).join('')}</div>
+  </section>`;
+  view.querySelectorAll('.difficulty-choice').forEach(button=>button.onclick=()=>start(button.dataset.difficulty));
+  view.querySelector('.difficulty-choice').focus({preventScroll:true});
+}
+function start(difficulty){
+  questions=Q.filter(q=>q[4]===difficulty);
+  answers=Array(questions.length).fill(null);
+  i=0;score=0;render();
+}
+function render(){
+  const [q,opts,,,,emoji]=questions[i];
+  view.innerHTML=`
+  <div class="top"><span>Question ${i+1} / ${questions.length}</span><span>⭐ Score: ${score}</span></div>
+  <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${questions.length}" aria-valuenow="${i}"><div id="fill"></div></div>
+  <div class="emoji">${emoji}</div>
   <p class="q">${esc(q)}</p>
   <div class="opts">${opts.map((o,n)=>`<button class="opt" data-n="${n}">${esc(o)}</button>`).join('')}</div>
   <div class="fb" id="fb" aria-live="polite"></div>
-  <button class="next" id="next">${i===Q.length-1?'See results 🎉':'Next →'}</button>`;
-  requestAnimationFrame(()=>document.getElementById('fill').style.width=(i/Q.length*100)+'%');
+  <button class="next" id="next">${i===questions.length-1?'See results 🎉':'Next →'}</button>`;
+  requestAnimationFrame(()=>document.getElementById('fill').style.width=(i/questions.length*100)+'%');
   view.querySelectorAll('.opt').forEach(b=>b.onclick=()=>answer(+b.dataset.n));
-  document.getElementById('next').onclick=()=>{i++;i<Q.length?render():finish()};
+  document.getElementById('next').onclick=()=>{i++;i<questions.length?render():finish()};
   locked=false;
   const first=view.querySelector('.opt');if(first)first.focus({preventScroll:true});
 }
 function answer(n){
   if(locked)return;locked=true;
-  const [, ,c,note]=Q[i],btns=[...view.querySelectorAll('.opt')],fb=document.getElementById('fb');
+  const [, ,c,note]=questions[i],btns=[...view.querySelectorAll('.opt[data-n]')],fb=document.getElementById('fb');
   answers[i]=n;
   btns.forEach(b=>b.disabled=true);
   btns[c].classList.add('correct');
@@ -124,16 +141,17 @@ function answer(n){
     setTimeout(()=>document.getElementById('app').classList.remove('flash-good'),700);}
   else{btns[n].classList.add('wrong');fb.className='fb bad';fb.innerHTML=`❌ Not quite. <span>${note}</span>`;}
   view.querySelector('.top span:last-child').textContent='⭐ Score: '+score;
-  document.getElementById('fill').style.width=((i+1)/Q.length*100)+'%';
+  document.getElementById('fill').style.width=((i+1)/questions.length*100)+'%';
+  document.querySelector('[role="progressbar"]').setAttribute('aria-valuenow',i+1);
   document.getElementById('next').classList.add('show');
   document.getElementById('next').focus();
 }
 function finish(){
-  const r=score/Q.length;
-  const missed=Q.map(([q,opts,c,note],index)=>answers[index]===c?null:`
+  const r=score/questions.length;
+  const missed=questions.map(([q,opts,c,note],index)=>answers[index]===c?null:`
     <article class="review-item">
       <p><strong>${esc(q)}</strong></p>
-      <p>Your answer: ${esc(Q[index][1][answers[index]])}</p>
+      <p>Your answer: ${esc(opts[answers[index]])}</p>
       <p>Correct answer: ${esc(opts[c])}</p>
       <p class="fun-fact">${esc(note)}</p>
     </article>`).filter(Boolean);
@@ -141,13 +159,13 @@ function finish(){
     r>=.6?['🌟','Solid orbit — nice job!']:r>=.4?['🛰️','Still in low Earth orbit. Keep going!']:['🌑','Houston, we have a problem. Try again!'];
   view.innerHTML=`
   <div class="bar"><div style="width:100%"></div></div>
-  <div class="result"><div class="big">${e}</div><div class="score">${score} / ${Q.length}</div><p>${t}</p>
+  <div class="result"><div class="big">${e}</div><div class="score">${score} / ${questions.length}</div><p>${t}</p>
   <button class="next show" id="again">Play again 🔄</button></div>
   <section class="review" aria-labelledby="review-title">
     <h2 id="review-title">${missed.length?'Review answers':'All correct!'}</h2>
     ${missed.length?missed.join(''):'<p>Congratulations — you answered every question correctly!</p>'}
   </section>`;
-  document.getElementById('again').onclick=()=>{i=0;score=0;answers=Array(Q.length).fill(null);render()};
+  document.getElementById('again').onclick=renderStart;
   document.getElementById('again').focus();
   if(r>=.6)confetti(40);
 }
@@ -158,9 +176,9 @@ function confetti(n){
     s.style.animationDuration=(1.5+Math.random()*1.5)+'s';document.body.appendChild(s);
     setTimeout(()=>s.remove(),3200);}
 }
-render();
+renderStart();
 document.addEventListener('keydown',e=>{
-  const n=+e.key;if(n>=1&&n<=4&&!locked&&view.querySelector('.opt'))answer(n-1);
+  const n=+e.key;if(n>=1&&n<=4&&!locked&&view.querySelector('.opt[data-n]'))answer(n-1);
 });
 </script>
 </body>
