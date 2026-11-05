@@ -62,6 +62,11 @@ h1 small::before{content:"";width:8px;height:8px;border-radius:50%;background:va
 .result .big{font-size:72px;animation:pop .8s}
 .result .score{font-size:32px;font-weight:800;margin:4px 0}
 .result p{color:var(--muted);margin:4px 0 18px}
+.review{text-align:left;margin-top:24px}
+.review h2{font-size:17px;margin:0 0 12px}
+.review-item{border:1px solid var(--border);border-radius:12px;padding:12px;margin-top:10px}
+.review-item p{margin:4px 0}
+.review-item .fun-fact{color:var(--muted);font-size:13px}
 .confetti{position:fixed;top:-20px;font-size:22px;pointer-events:none;animation:fall linear forwards}
 @keyframes fall{to{transform:translateY(110vh) rotate(540deg);opacity:.8}}
 .flash-good{animation:fg .6s}
@@ -89,6 +94,7 @@ const Q=[
 ];
 const view=document.getElementById('view');
 let i=0,score=0,locked=false;
+let answers=Array(Q.length).fill(null);
 const esc=s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 
 function render(){
@@ -110,6 +116,7 @@ function render(){
 function answer(n){
   if(locked)return;locked=true;
   const [, ,c,note]=Q[i],btns=[...view.querySelectorAll('.opt')],fb=document.getElementById('fb');
+  answers[i]=n;
   btns.forEach(b=>b.disabled=true);
   btns[c].classList.add('correct');
   if(n===c){score++;fb.className='fb good';fb.innerHTML=`✅ Correct! <span>${note}</span>`;confetti(14);
@@ -123,13 +130,24 @@ function answer(n){
 }
 function finish(){
   const r=score/Q.length;
+  const missed=Q.map(([q,opts,c,note],index)=>answers[index]===c?null:`
+    <article class="review-item">
+      <p><strong>${esc(q)}</strong></p>
+      <p>Your answer: ${esc(Q[index][1][answers[index]])}</p>
+      <p>Correct answer: ${esc(opts[c])}</p>
+      <p class="fun-fact">${esc(note)}</p>
+    </article>`).filter(Boolean);
   const [e,t]=r===1?['🏆','Mission perfect! Astronaut material.']:r>=.8?['🚀','Stellar work, Commander!']:
     r>=.6?['🌟','Solid orbit — nice job!']:r>=.4?['🛰️','Still in low Earth orbit. Keep going!']:['🌑','Houston, we have a problem. Try again!'];
   view.innerHTML=`
   <div class="bar"><div style="width:100%"></div></div>
   <div class="result"><div class="big">${e}</div><div class="score">${score} / ${Q.length}</div><p>${t}</p>
-  <button class="next show" id="again">Play again 🔄</button></div>`;
-  document.getElementById('again').onclick=()=>{i=0;score=0;render()};
+  <button class="next show" id="again">Play again 🔄</button></div>
+  <section class="review" aria-labelledby="review-title">
+    <h2 id="review-title">${missed.length?'Review answers':'All correct!'}</h2>
+    ${missed.length?missed.join(''):'<p>Congratulations — you answered every question correctly!</p>'}
+  </section>`;
+  document.getElementById('again').onclick=()=>{i=0;score=0;answers=Array(Q.length).fill(null);render()};
   document.getElementById('again').focus();
   if(r>=.6)confetti(40);
 }
