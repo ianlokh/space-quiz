@@ -10,3 +10,5 @@ A 10-question space quiz in a single `index.html` — no server, build, or depen
 
 ## Run
 Open `index.html` in any modern browser.
+
+The quiz is also deployed at https://ianlokh.github.io/space-quiz/. Pushes to `main` automatically update the site through GitHub Actions.
